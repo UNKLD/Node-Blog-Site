@@ -1,21 +1,28 @@
 const express = require("express");
 var _ = require("lodash");
+const mongoose = require("mongoose");
 
-const homeStartingContent =
+try {
+  mongoose.connect("mongodb://localhost:27017/blogDB");
+  console.log("DB connected");
+} catch (error) {
+  console.log("Error\n" + error);
+}
+
+const blogSchema = mongoose.Schema({
+  title: String,
+  content: String,
+});
+
+const Blog = mongoose.model("Blog", blogSchema);
+
+const homePageContent =
   "Lacus vel facilisis volutpat est velit egestas dui id ornare. Semper auctor neque vitae tempus quam. Sit amet cursus sit amet dictum sit amet justo. Viverra tellus in hac habitasse. Imperdiet proin fermentum leo vel orci porta. Donec ultrices tincidunt arcu non sodales neque sodales ut. Mattis molestie a iaculis at erat pellentesque adipiscing. Magnis dis parturient montes nascetur ridiculus mus mauris vitae ultricies. Adipiscing elit ut aliquam purus sit amet luctus venenatis lectus. Ultrices vitae auctor eu augue ut lectus arcu bibendum at. Odio euismod lacinia at quis risus sed vulputate odio ut. Cursus mattis molestie a iaculis at erat pellentesque adipiscing.";
+
 const aboutContent =
   "Hac habitasse platea dictumst vestibulum rhoncus est pellentesque. Dictumst vestibulum rhoncus est pellentesque elit ullamcorper. Non diam phasellus vestibulum lorem sed. Platea dictumst quisque sagittis purus sit. Egestas sed sed risus pretium quam vulputate dignissim suspendisse. Mauris in aliquam sem fringilla. Semper risus in hendrerit gravida rutrum quisque non tellus orci. Amet massa vitae tortor condimentum lacinia quis vel eros. Enim ut tellus elementum sagittis vitae. Mauris ultrices eros in cursus turpis massa tincidunt dui.";
 const contactContent =
   "Scelerisque eleifend donec pretium vulputate sapien. Rhoncus urna neque viverra justo nec ultrices. Arcu dui vivamus arcu felis bibendum. Consectetur adipiscing elit duis tristique. Risus viverra adipiscing at in tellus integer feugiat. Sapien nec sagittis aliquam malesuada bibendum arcu vitae. Consequat interdum varius sit amet mattis. Iaculis nunc sed augue lacus. Interdum posuere lorem ipsum dolor sit amet consectetur adipiscing elit. Pulvinar elementum integer enim neque. Ultrices gravida dictum fusce ut placerat orci nulla. Mauris in aliquam sem fringilla ut morbi tincidunt. Tortor posuere ac ut consequat semper viverra nam libero.";
-
-const posts = [
-  {
-    title: "Day 1",
-    content:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec varius mauris a fringilla feugiat. Vestibulum commodo volutpat ligula, eu condimentum odio varius eget. Praesent pellentesque, dui ut sollicitudin viverra, justo quam consectetur lacus, sit amet auctor lectus enim vel est. Nulla id nisl nec lacus placerat imperdiet id sit amet quam. Suspendisse ut ultricies leo, nec dapibus ligula. Nunc ut magna sed urna vestibulum fringilla. Phasellus scelerisque viverra libero. Aliquam mollis semper dolor, volutpat egestas quam pulvinar eu.",
-  },
-];
-
 const app = express();
 
 app.set("view engine", "ejs");
@@ -23,15 +30,16 @@ app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-app.get("/", (_req, res) => {
-  res.render("home", { startingContent: homeStartingContent, posts });
+app.get("/", async (_req, res) => {
+  const posts = await Blog.find();
+  res.render("home", { startingContent: homePageContent, posts });
 });
 
-app.get("/about", (_req, res) => {
+app.get("/about", async (_req, res) => {
   res.render("about", { aboutContent });
 });
 
-app.get("/contact", (_req, res) => {
+app.get("/contact", async (_req, res) => {
   res.render("contact", { contactContent });
 });
 
@@ -40,19 +48,18 @@ app.get("/compose", (_req, res) => {
 });
 
 app.post("/compose", (req, res) => {
-  const post = {
+  const post = new Blog({
     title: req.body.postTitle,
     content: req.body.postBody,
-  };
-  posts.push(post);
+  });
+  post.save();
   res.redirect("/");
 });
 
-app.get("/posts/:postTitle", (req, res) => {
-  const postTitle = _.lowerCase(req.params.postTitle);
-  // console.log(slug);
-  const post = posts.find(({ title }) => _.lowerCase(title) === postTitle);
-  if (post) {
+app.get("/posts/:postTitle", async (req, res) => {
+  const postTitle =_.capitalize(req.params.postTitle);
+  const post = await Blog.find({ title: postTitle });
+  if (post.length > 0) {
     res.render("post", { post });
   } else {
     res.render("404");
