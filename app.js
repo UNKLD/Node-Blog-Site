@@ -1,6 +1,4 @@
 const express = require("express");
-const { result } = require("lodash");
-var _ = require("lodash");
 const mongoose = require("mongoose");
 
 const app = express();
@@ -47,7 +45,7 @@ app.get("/contact", (_req, res) => {
 });
 
 app.get("/posts/:postId", async (req, res) => {
-  const {postId} = req.params
+  const { postId } = req.params
   const post = await Blog.find({ _id: postId });
   if (post.length > 0) {
     res.render("post", { post });
@@ -60,15 +58,19 @@ app.get("/posts/:postId", async (req, res) => {
 app.route("/compose")
   .get((_req, res) => {
     res.render("compose");
-
   })
   .post(async (req, res) => {
     const post = new Blog({
       title: req.body.postTitle,
       content: req.body.postBody,
     });
-    await post.save();
-    res.redirect("/");
+    try {
+      await post.save();
+      res.redirect("/");
+    } catch (error) {
+      console.log(error);
+      res.render("404");
+    }
   });
 
 app.post("/post/delete", async (req, res) => {
@@ -76,10 +78,7 @@ app.post("/post/delete", async (req, res) => {
   try {
     const post = await Blog.deleteOne({ _id: postId });
     if (post.deletedCount === 0) {
-      res.json({
-        message: "Post Not Found",
-        result: post,
-      });
+      res.render("404")
     }
     res.redirect("/");
   } catch (error) {
@@ -87,6 +86,6 @@ app.post("/post/delete", async (req, res) => {
   }
 })
 
-app.listen(3000, function () {
+app.listen(process.env.PORT || 3000, function () {
   console.log("Server started on port 3000");
 });
