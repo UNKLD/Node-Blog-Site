@@ -1,8 +1,16 @@
 <%- include("partials/header") -%>
 
 
-<h1><%= post[0].title %> </h1>
+  <h1>
+    <%= post[0].title %>
+  </h1>
 
-<p><%= post[0].content %> </p>
+  <p>
+    <%= post[0].content %>
+  </p>
 
-<%- include("partials/footer") -%>
+
+  <form action="/post/delete" method="post">
+    <button class="btn btn-large btn-danger" type="submit" value="<%= post[0]._id %>" name="postId">Delete Post</button>
+  </form>
+  <%- include("partials/footer") -%>
